@@ -14,7 +14,7 @@ class SavantClient:
         self.port = port
         self.base_url = f"http://{host}:{port}"
 
-    async def get_scenes(self) -> List[Dict]:
+    async def get_scenes(self) -> Optional[List[Dict]]:
         """Fetch scenes from the host."""
         url = f"{self.base_url}/config/v1/scenes"
         try:
@@ -35,7 +35,8 @@ class SavantClient:
                     _LOGGER.error(f"Failed to fetch scenes. Status: {response.status}")
         except Exception as e:
             _LOGGER.error(f"Error fetching scenes: {e}")
-        return []
+            raise e  # Re-raise exception to trigger re-discovery
+        return None
 
     async def activate_scene(self, scene_id: str) -> bool:
         """Activate a scene."""
