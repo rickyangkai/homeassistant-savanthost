@@ -9,6 +9,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DOMAIN, CONF_HOST, CONF_PORT, SCAN_INTERVAL_SECONDS
 from .api import SavantClient
+from .discovery import SavantDiscovery
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,10 +31,44 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     async def async_update_data():
         """Fetch data from API."""
-        scenes = await client.get_scenes()
-        if not scenes:
-            # Don't raise UpdateFailed for empty scenes, just log
-            _LOGGER.debug("No scenes found or host unreachable")
+        try:
+            scenes = await client.get_scenes()
+        except Exception:
+            _LOGGER.warning("Connection lost, attempting to re-discover Savant Host...")
+            # Try to discover
+            discovery = SavantDiscovery(hass)
+            hosts = await discovery.discover()
+            
+            if hosts:
+                # Use the first found host
+                new_host = hosts[0]
+                new_ip = new_host["ip"]
+                new_port = new_host["port"]
+                
+                _LOGGER.info(f"Re-discovered host at {new_ip}:{new_port}")
+                
+                # Update client
+                client.host = new_ip
+                client.port = new_port
+                client.base_url = f"http://{new_ip}:{new_port}"
+                
+                # Update ConfigEntry
+                hass.config_entries.async_update_entry(
+                    entry,
+                    data={**entry.data, CONF_HOST: new_ip, CONF_PORT: new_port}
+                )
+                
+                # Retry fetch
+                try:
+                    scenes = await client.get_scenes()
+                except Exception as e:
+                    raise UpdateFailed(f"Error communicating with API after re-discovery: {e}")
+            else:
+                raise UpdateFailed("Connection lost and re-discovery failed")
+
+        if scenes is None:
+            # Don't raise UpdateFailed for empty scenes/error status, just return empty
+            _LOGGER.debug("No scenes found or API error")
             return []
         return scenes
 

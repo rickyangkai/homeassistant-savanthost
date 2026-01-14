@@ -21,14 +21,27 @@ async def async_setup_entry(
     coordinator = data["coordinator"]
     client = data["client"]
 
-    # Create entities from coordinator data
-    current_scenes = coordinator.data or []
-    entities = []
-    
-    for scene_info in current_scenes:
-        entities.append(SavantSceneEntity(coordinator, client, scene_info))
+    known_ids = set()
 
-    async_add_entities(entities)
+    def _update_entities():
+        """Update entities from coordinator data."""
+        new_entities = []
+        current_scenes = coordinator.data or []
+        
+        for scene_info in current_scenes:
+            if scene_info["id"] not in known_ids:
+                new_entities.append(SavantSceneEntity(coordinator, client, scene_info))
+                known_ids.add(scene_info["id"])
+        
+        if new_entities:
+            _LOGGER.debug(f"Adding {len(new_entities)} new scenes")
+            async_add_entities(new_entities)
+
+    # Listen for coordinator updates to add new entities
+    entry.async_on_unload(coordinator.async_add_listener(_update_entities))
+    
+    # Initial load
+    _update_entities()
 
 class SavantSceneEntity(CoordinatorEntity, Scene):
     """Representation of a Savant Scene."""
