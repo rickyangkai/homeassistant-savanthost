@@ -1,0 +1,36 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Savant Host 授权",
+        "description": "请将下方显示的**设备地址码**发送给开发者以获取授权码。\n\n设备地址码：**{address_code}**",
+        "data": {
+          "auth_code": "授权码"
+        }
+      },
+      "discovery": {
+        "title": "选择 Savant 主机",
+        "description": "发现以下 Savant 主机，请选择一个进行连接。",
+        "data": {
+          "host": "选择主机"
+        }
+      },
+      "manual": {
+        "title": "手动配置",
+        "description": "未能自动发现 Savant 主机，请手动输入连接信息。",
+        "data": {
+          "host": "IP 地址",
+          "port": "端口"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth_code": "授权码无效，请检查后重试。",
+      "cannot_connect": "连接失败",
+      "unknown": "未知错误"
+    },
+    "abort": {
+      "already_configured": "设备已配置"
+    }
+  }
+}
