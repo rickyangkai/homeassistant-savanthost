@@ -46,20 +46,25 @@ class SavantDiscovery:
     async def discover(self, timeout: int = 5) -> List[Dict]:
         """Run discovery for a specified timeout."""
         self.found_hosts = []
-        service_type = "_soapi_sdo._tcp.local."
+        # Try both with and without .local. suffix, and just _tcp
+        service_types = [
+            "_soapi_sdo._tcp.local.",
+        ]
         
         try:
             # Get shared zeroconf instance
             zc = await ha_zeroconf.async_get_instance(self.hass)
             
             def on_service_state_change(zeroconf_obj, service_type, name, state_change):
+                _LOGGER.debug(f"Service state change: {name} {state_change}")
                 if state_change is ServiceStateChange.Added:
                     info = zeroconf_obj.get_service_info(service_type, name)
                     if info:
+                        _LOGGER.debug(f"Found service info: {info}")
                         self._process_service_info(info)
 
             self._browser = ServiceBrowser(
-                zc, service_type, handlers=[on_service_state_change]
+                zc, service_types, handlers=[on_service_state_change]
             )
 
             # Wait for discovery

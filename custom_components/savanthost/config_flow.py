@@ -114,7 +114,7 @@ class SavantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data={
                     CONF_AUTH_CODE: self.auth_code,
                     CONF_HOST: user_input[CONF_HOST],
-                    CONF_PORT: user_input[CONF_PORT]
+                    CONF_PORT: DEFAULT_PORT
                 }
             )
 
@@ -122,7 +122,6 @@ class SavantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="manual",
             data_schema=vol.Schema({
                 vol.Required(CONF_HOST): str,
-                vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
             }),
             errors=errors,
         )
