@@ -57,11 +57,23 @@ class SavantDiscovery:
             
             def on_service_state_change(zeroconf_obj, service_type, name, state_change):
                 _LOGGER.debug(f"Service state change: {name} {state_change}")
-                if state_change is ServiceStateChange.Added:
+                # Process Added AND Updated events
+                if state_change in (ServiceStateChange.Added, ServiceStateChange.Updated):
                     info = zeroconf_obj.get_service_info(service_type, name)
                     if info:
                         _LOGGER.debug(f"Found service info: {info}")
                         self._process_service_info(info)
+
+            # Check cache first!
+            for service_type in service_types:
+                # Get services already in cache
+                try:
+                    info_list = zc.cache.get_all_by_details(service_type)
+                    for info in info_list:
+                         _LOGGER.debug(f"Found cached service info: {info}")
+                         self._process_service_info(info)
+                except Exception as e:
+                    _LOGGER.debug(f"Error checking cache: {e}")
 
             self._browser = ServiceBrowser(
                 zc, service_types, handlers=[on_service_state_change]
