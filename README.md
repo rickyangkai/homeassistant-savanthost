@@ -82,3 +82,5 @@ A: 插件每 5 分钟自动同步一次。如果您刚修改了 Savant 场景，
 
 Copyright © 2024-2026 Rick Yang. All rights reserved.
 本插件仅供测试与交流使用，禁止用于商业用途。
+
+测试提交
