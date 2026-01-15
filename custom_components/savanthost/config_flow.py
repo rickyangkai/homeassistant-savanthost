@@ -29,6 +29,14 @@ class SavantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         device_id = get_device_id()
         address_code = generate_address_code(device_id)
         
+        # Check if already authorized in other entries
+        # If found, skip auth step and proceed to discovery directly
+        existing_auth_code = self._get_existing_auth_code()
+        if existing_auth_code:
+            _LOGGER.info("Found existing authorization, skipping auth step")
+            self.auth_code = existing_auth_code
+            return await self.async_step_discovery()
+        
         description_placeholders = {
             "address_code": address_code
         }
@@ -54,6 +62,15 @@ class SavantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders=description_placeholders,
         )
+
+    def _get_existing_auth_code(self):
+        """Check if there is any existing entry with valid auth code."""
+        # Get all entries for this domain
+        current_entries = self.hass.config_entries.async_entries(DOMAIN)
+        for entry in current_entries:
+            if CONF_AUTH_CODE in entry.data:
+                return entry.data[CONF_AUTH_CODE]
+        return None
 
     async def async_step_discovery(self, user_input=None):
         """Step 2: Auto discover hosts."""
