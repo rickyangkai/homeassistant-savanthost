@@ -43,6 +43,16 @@ class SavantDiscovery:
             _LOGGER.info(f"Discovered Savant Host: {host_entry}")
             self.found_hosts.append(host_entry)
 
+    def _on_service_state_change(self, zeroconf_obj, service_type, name, state_change):
+        """Handle service state changes."""
+        _LOGGER.debug(f"Service state change: {name} {state_change}")
+        # Process Added AND Updated events
+        if state_change in (ServiceStateChange.Added, ServiceStateChange.Updated):
+            info = zeroconf_obj.get_service_info(service_type, name)
+            if info:
+                _LOGGER.debug(f"Found service info: {info}")
+                self._process_service_info(info)
+
     async def discover(self, timeout: int = 5) -> List[Dict]:
         """Run discovery for a specified timeout."""
         self.found_hosts = []
@@ -55,15 +65,6 @@ class SavantDiscovery:
             # Get shared zeroconf instance
             zc = await ha_zeroconf.async_get_instance(self.hass)
             
-            def on_service_state_change(zeroconf_obj, service_type, name, state_change):
-                _LOGGER.debug(f"Service state change: {name} {state_change}")
-                # Process Added AND Updated events
-                if state_change in (ServiceStateChange.Added, ServiceStateChange.Updated):
-                    info = zeroconf_obj.get_service_info(service_type, name)
-                    if info:
-                        _LOGGER.debug(f"Found service info: {info}")
-                        self._process_service_info(info)
-
             # Check cache first!
             for service_type in service_types:
                 # Get services already in cache
@@ -76,7 +77,7 @@ class SavantDiscovery:
                     _LOGGER.debug(f"Error checking cache: {e}")
 
             self._browser = ServiceBrowser(
-                zc, service_types, handlers=[on_service_state_change]
+                zc, service_types, handlers=[self._on_service_state_change]
             )
 
             # Wait for discovery
