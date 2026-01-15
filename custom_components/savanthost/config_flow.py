@@ -91,7 +91,7 @@ class SavantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data={
                         CONF_AUTH_CODE: self.auth_code,
                         CONF_HOST: host["ip"],
-                        CONF_PORT: host["port"]
+                        CONF_PORT: host.get("port", DEFAULT_PORT)  # Use discovered port or default
                     }
                 )
 
@@ -107,7 +107,7 @@ class SavantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data={
                         CONF_AUTH_CODE: self.auth_code,
                         CONF_HOST: selected_host["ip"],
-                        CONF_PORT: selected_host["port"]
+                        CONF_PORT: selected_host.get("port", DEFAULT_PORT)
                     }
                 )
 
