@@ -31,9 +31,20 @@ def validate_auth_code(address_code: str, auth_code: str) -> bool:
     # Logic from auth.ts:
     # expected = sha256(addressCode.reversed() + 'SavantHostAuth').digest('hex').substring(0, 16).toUpperCase()
     
+    if not auth_code:
+        return False
+        
     reversed_address = address_code[::-1]
     data = f"{reversed_address}SavantHostAuth"
     hash_obj = hashlib.sha256(data.encode())
     expected_code = hash_obj.hexdigest()[:16].upper()
     
-    return auth_code.upper() == expected_code
+    # Clean input code (remove spaces, upper case)
+    clean_auth_code = auth_code.strip().upper()
+    
+    is_valid = clean_auth_code == expected_code
+    
+    if not is_valid:
+        _LOGGER.debug(f"Auth failed. Address: {address_code}, Expected: {expected_code}, Got: {clean_auth_code}")
+        
+    return is_valid

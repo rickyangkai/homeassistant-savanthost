@@ -34,13 +34,16 @@ class SavantConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
 
         if user_input is not None:
-            self.auth_code = user_input[CONF_AUTH_CODE]
+            self.auth_code = user_input[CONF_AUTH_CODE].strip()
+            
+            _LOGGER.debug(f"Validating auth code for address {address_code}")
             
             # Validate Auth Code
             if validate_auth_code(address_code, self.auth_code):
                 # Auth success, proceed to discovery
                 return await self.async_step_discovery()
             else:
+                _LOGGER.warning(f"Invalid auth code provided for address {address_code}")
                 errors["base"] = "invalid_auth_code"
 
         return self.async_show_form(
