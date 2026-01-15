@@ -2,7 +2,8 @@ import logging
 import asyncio
 from typing import List, Dict, Optional
 from homeassistant.core import HomeAssistant
-from homeassistant.components import zeroconf
+from homeassistant.components import zeroconf as ha_zeroconf
+from zeroconf import ServiceBrowser, ServiceStateChange
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,29 +48,26 @@ class SavantDiscovery:
         self.found_hosts = []
         service_type = "_soapi_sdo._tcp.local."
         
-        # Get shared zeroconf instance
-        zc = await zeroconf.async_get_instance(self.hass)
-        
-        # In HA, we can just query the cache directly or use async_service_info
-        # But a browser is more robust to find *new* things.
-        # However, HA's shared zeroconf is already browsing commonly.
-        # Let's check if HA zeroconf helper has a better way.
-        # Usually, we register a listener.
-        
-        def on_service_state_change(zeroconf_obj, service_type, name, state_change):
-            if state_change is zeroconf.ServiceStateChange.Added:
-                info = zeroconf_obj.get_service_info(service_type, name)
-                if info:
-                    self._process_service_info(info)
+        try:
+            # Get shared zeroconf instance
+            zc = await ha_zeroconf.async_get_instance(self.hass)
+            
+            def on_service_state_change(zeroconf_obj, service_type, name, state_change):
+                if state_change is ServiceStateChange.Added:
+                    info = zeroconf_obj.get_service_info(service_type, name)
+                    if info:
+                        self._process_service_info(info)
 
-        self._browser = zeroconf.ServiceBrowser(
-            zc, service_type, handlers=[on_service_state_change]
-        )
+            self._browser = ServiceBrowser(
+                zc, service_type, handlers=[on_service_state_change]
+            )
 
-        # Wait for discovery
-        await asyncio.sleep(timeout)
-        
-        # We should strictly NOT close the shared zeroconf instance
-        self._browser.cancel()
-        
+            # Wait for discovery
+            await asyncio.sleep(timeout)
+            
+            # We should strictly NOT close the shared zeroconf instance
+            self._browser.cancel()
+        except Exception as e:
+            _LOGGER.error(f"Error during discovery: {e}")
+            
         return self.found_hosts
